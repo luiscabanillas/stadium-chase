@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440">
+  <defs>
+    <style>
+      .structure { fill: #c8c4b8; stroke: #7a7870; stroke-width: 1.5; }
+      .upper-deck { fill: #b8b4a6; stroke: #7a7870; stroke-width: 1; }
+      .lower-deck { fill: #d4b896; stroke: #8a7860; stroke-width: 1; }
+      .concourse { fill: #a8a498; stroke: #7a7870; stroke-width: 0.8; }
+      .field { fill: #6aaa54; stroke: #4a8a3a; stroke-width: 0.8; }
+      .infield-dirt { fill: #c4a070; stroke: #a08050; stroke-width: 0.5; }
+      .warning-track { fill: #b89868; stroke: none; }
+      .foul-line { stroke: #ffffff; stroke-width: 1; fill: none; }
+      .baseline { stroke: #ffffff; stroke-width: 0.8; fill: none; }
+      .outfield-wall { fill: none; stroke: #3a5a3a; stroke-width: 2.5; }
+      .roof-track { fill: none; stroke: #888; stroke-width: 1; stroke-dasharray: 6,3; }
+      .roof-panel { fill: #9a9690; stroke: #7a7670; stroke-width: 1; opacity: 0.5; }
+      .pool { fill: #6ac8e8; stroke: #4aa8c8; stroke-width: 1; }
+      .bullpen { fill: #c4a070; stroke: #8a7860; stroke-width: 0.8; }
+      .mound { fill: #c4a070; stroke: #a08050; stroke-width: 0.5; }
+      .base { fill: #ffffff; stroke: none; }
+      .text-dim { fill: #666; font-family: Arial, sans-serif; font-size: 9px; }
+    </style>
+  </defs>
+
+  <!-- Rectangular outer structure (the "hangar") -->
+  <rect x="40" y="20" width="320" height="400" rx="6" class="structure"/>
+
+  <!-- Retractable roof arch (top) -->
+  <ellipse cx="200" cy="20" rx="140" ry="35" class="structure" />
+
+  <!-- Retractable roof arch (bottom / home plate side) -->
+  <ellipse cx="200" cy="420" rx="120" ry="30" class="structure" />
+
+  <!-- Roof tracks (dashed lines showing where panels slide) -->
+  <line x1="40" y1="80" x2="40" y2="340" class="roof-track"/>
+  <line x1="60" y1="80" x2="60" y2="340" class="roof-track"/>
+  <line x1="340" y1="80" x2="340" y2="340" class="roof-track"/>
+  <line x1="360" y1="80" x2="360" y2="340" class="roof-track"/>
+
+  <!-- Upper deck seating (wraps around in foul territory) -->
+  <!-- Left side upper deck -->
+  <path d="M55 130 L55 370 Q55 390 75 395 L135 400 Q150 400 155 390 L155 340 L80 340 L80 130 Z" class="upper-deck"/>
+  <!-- Right side upper deck -->
+  <path d="M345 130 L345 370 Q345 390 325 395 L265 400 Q250 400 245 390 L245 340 L320 340 L320 130 Z" class="upper-deck"/>
+  <!-- Behind home plate upper deck -->
+  <path d="M75 395 Q200 430 325 395 L325 370 Q200 400 75 370 Z" class="upper-deck"/>
+
+  <!-- Lower deck seating bowl -->
+  <!-- Left field corner / third base side -->
+  <path d="M90 155 L80 290 Q80 340 115 360 L155 380 Q175 388 200 390 Q225 388 245 380 L285 360 Q320 340 320 290 L310 155" class="lower-deck" />
+
+  <!-- Outfield seating (behind outfield wall) -->
+  <path d="M90 155 Q95 115 130 95 L165 82 Q200 75 235 82 L270 95 Q305 115 310 155" class="lower-deck" opacity="0.7"/>
+
+  <!-- Warning track -->
+  <path d="M105 175 Q110 130 145 108 L175 95 Q200 88 225 95 L255 108 Q290 130 295 175 L295 200 Q290 210 275 220 L245 235 Q200 250 155 235 L125 220 Q110 210 105 200 Z" class="warning-track"/>
+
+  <!-- Outfield grass -->
+  <path d="M112 172 Q116 135 148 114 L178 100 Q200 94 222 100 L252 114 Q284 135 288 172 L288 195 Q284 208 268 218 L240 230 Q200 244 160 230 L132 218 Q116 208 112 195 Z" class="field"/>
+
+  <!-- Infield grass -->
+  <path d="M130 220 L200 290 L270 220 L200 155 Z" class="field"/>
+
+  <!-- Infield dirt (full arc) -->
+  <path d="M120 245 Q125 210 145 195 L200 148 L255 195 Q275 210 280 245 Q280 285 260 310 Q240 330 200 340 Q160 330 140 310 Q120 285 120 245 Z" class="infield-dirt"/>
+
+  <!-- Infield grass (inside diamond) -->
+  <path d="M155 245 Q158 225 170 215 L200 190 L230 215 Q242 225 245 245 Q245 270 235 285 Q225 298 200 305 Q175 298 165 285 Q155 270 155 245 Z" class="field"/>
+
+  <!-- Dirt path from mound to home plate -->
+  <rect x="197" y="295" width="6" height="45" class="infield-dirt"/>
+
+  <!-- Pitcher's mound -->
+  <circle cx="200" cy="260" r="9" class="mound"/>
+  <circle cx="200" cy="262" r="2" class="base"/>
+
+  <!-- Bases -->
+  <rect x="197" y="335" width="6" height="6" class="base" transform="rotate(45,200,338)"/> <!-- Home -->
+  <rect x="148" y="243" width="5" height="5" class="base" transform="rotate(45,150,245)"/> <!-- 3rd -->
+  <rect x="248" y="243" width="5" height="5" class="base" transform="rotate(45,250,245)"/> <!-- 1st -->
+  <rect x="198" y="193" width="5" height="5" class="base" transform="rotate(45,200,195)"/> <!-- 2nd -->
+
+  <!-- Foul lines -->
+  <line x1="200" y1="338" x2="95" y2="165" class="foul-line"/>
+  <line x1="200" y1="338" x2="305" y2="165" class="foul-line"/>
+
+  <!-- Outfield wall -->
+  <path d="M95 170 Q100 128 140 106 L170 92 Q200 84 230 92 L260 106 Q300 128 305 170" class="outfield-wall"/>
+
+  <!-- CF high wall section -->
+  <path d="M155 90 L170 85 Q200 78 230 85 L245 90" stroke="#2a4a2a" stroke-width="4" fill="none"/>
+
+  <!-- Bullpen areas -->
+  <rect x="90" y="135" width="18" height="45" rx="2" class="bullpen"/> <!-- LF bullpen -->
+  <rect x="292" y="135" width="18" height="45" rx="2" class="bullpen"/> <!-- RF bullpen -->
+
+  <!-- Swimming pool (right-center field) -->
+  <rect x="265" y="90" width="28" height="14" rx="4" class="pool"/>
+
+  <!-- Center field balcony overhangs -->
+  <rect x="130" y="80" width="15" height="10" rx="2" fill="#b8b4a6" stroke="#7a7870" stroke-width="0.8"/>
+  <rect x="255" y="80" width="15" height="10" rx="2" fill="#b8b4a6" stroke="#7a7870" stroke-width="0.8"/>
+
+  <!-- Home plate area / backstop -->
+  <path d="M170 360 Q200 375 230 360" fill="none" stroke="#888" stroke-width="1.5"/>
+
+  <!-- Dugouts -->
+  <rect x="155" y="345" width="25" height="5" rx="1" fill="#666" stroke="#555" stroke-width="0.5"/>
+  <rect x="220" y="345" width="25" height="5" rx="1" fill="#666" stroke="#555" stroke-width="0.5"/>
+
+  <!-- Distance markers -->
+  <text x="93" y="178" class="text-dim" font-weight="bold">330</text>
+  <text x="118" y="120" class="text-dim" font-weight="bold">376</text>
+  <text x="189" y="78" class="text-dim" font-weight="bold">407</text>
+  <text x="262" y="120" class="text-dim" font-weight="bold">376</text>
+  <text x="295" y="178" class="text-dim" font-weight="bold">335</text>
+
+  <!-- Circular rotunda entrance (west/left side) -->
+  <circle cx="42" cy="385" r="18" fill="#d4d0c4" stroke="#7a7870" stroke-width="1.5"/>
+</svg>
