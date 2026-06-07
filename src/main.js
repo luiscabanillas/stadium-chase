@@ -1,4 +1,5 @@
 import { ALL_MLB_STADIUMS, VISITS, TEAM_COLORS, TEAM_IDS, EXTRA_GAMES } from './stadiums.js';
+import { t, getLang, setLang, getDateLocale } from './i18n.js';
 
 const STADIUM_BLUEPRINTS = {
   'yankee-stadium': '/stadium-blueprints/100/yankee-stadium.png',
@@ -133,7 +134,7 @@ function makeMarkerIcon(stadium, visited) {
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatDuration(mins) {
@@ -143,7 +144,7 @@ function formatDuration(mins) {
 }
 
 function formatAttendance(n) {
-  return n ? n.toLocaleString('en-US') : '—';
+  return n ? n.toLocaleString(getDateLocale()) : '—';
 }
 
 function getStadiumImage(stadium) {
@@ -268,7 +269,7 @@ function renderLineups(boxscore, visit) {
     html += `<div class="lineup-header">${teamLogo(teamName, 16)} ${teamName}</div>`;
 
     // Starting lineup
-    html += `<div class="lineup-section-label">Starting Lineup</div>`;
+    html += `<div class="lineup-section-label">${t('startingLineup')}</div>`;
     html += `<div class="lineup-list">`;
     starters.forEach((s, i) => {
       html += `<div class="lineup-player"><span class="lineup-order">${i + 1}</span><span class="lineup-name">${s.name}</span><span class="lineup-pos">${s.pos}</span></div>`;
@@ -280,7 +281,7 @@ function renderLineups(boxscore, visit) {
 
     // Substitutes
     if (subPositionPlayers.length > 0 || subPitchers.length > 0) {
-      html += `<div class="lineup-section-label">Substitutes</div>`;
+      html += `<div class="lineup-section-label">${t('substitutes')}</div>`;
       html += `<div class="lineup-list lineup-subs">`;
       subPositionPlayers.forEach(s => {
         html += `<div class="lineup-player"><span class="lineup-order"></span><span class="lineup-name">${s.name}</span><span class="lineup-pos">${s.pos}</span></div>`;
@@ -309,7 +310,7 @@ async function loadBoxScore(visit) {
   lineupsWrap.innerHTML = '';
 
   const gamePk = getGamePk(visit.boxscoreUrl);
-  if (!gamePk) { loading.textContent = 'Game ID not found'; return; }
+  if (!gamePk) { loading.textContent = t('gameIdNotFound'); return; }
 
   try {
     const { linescore, boxscore } = await fetchBoxScore(gamePk);
@@ -317,7 +318,7 @@ async function loadBoxScore(visit) {
     lineupsWrap.innerHTML = renderLineups(boxscore, visit);
     loading.style.display = 'none';
   } catch (e) {
-    loading.textContent = 'Could not load box score';
+    loading.textContent = t('boxScoreError');
   }
 }
 
@@ -361,7 +362,7 @@ function showPanel(stadium) {
   const boxscoreBtn = document.getElementById('panel-boxscore');
 
   if (visit) {
-    badge.textContent = 'VISITED';
+    badge.textContent = t('visited').toUpperCase();
     badge.className = 'visited-badge';
     photoHint.style.display = 'none';
 
@@ -377,7 +378,7 @@ function showPanel(stadium) {
     homeRuns.textContent = visit.homeScore;
     awayRuns.className = 'score-runs' + (visit.awayScore > visit.homeScore ? ' winner' : '');
     homeRuns.className = 'score-runs' + (visit.homeScore > visit.awayScore ? ' winner' : '');
-    document.getElementById('score-final-label').textContent = visit.extra || 'FINAL';
+    document.getElementById('score-final-label').textContent = visit.extra || t('final');
 
     // Pitchers
     pitchersSection.style.display = '';
@@ -406,7 +407,7 @@ function showPanel(stadium) {
 
     loadBoxScore(visit);
   } else {
-    badge.textContent = 'NOT YET VISITED';
+    badge.textContent = t('notYetVisited');
     badge.className = 'visited-badge not-visited';
     photoHint.style.display = 'none';
     scoreboard.style.display = 'none';
@@ -436,7 +437,7 @@ function showPanel(stadium) {
 
 function formatShortDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function renderExtraGames(stadiumId) {
@@ -525,7 +526,7 @@ function buildSidebar() {
 
   const allChip = document.createElement('button');
   allChip.className = 'filter-chip active';
-  allChip.textContent = 'All';
+  allChip.textContent = t('all');
   allChip.dataset.year = 'all';
   filterContainer.appendChild(allChip);
 
@@ -631,7 +632,7 @@ ALL_MLB_STADIUMS.forEach(stadium => {
           <div class="hovercard-title">${teamLogo(stadium.team, 20)} ${stadium.name}</div>
           <div class="hovercard-team" style="color:${TEAM_COLORS[stadium.team]?.primary || '#888'}">${stadium.team}</div>
           <div class="hovercard-score">
-            <span class="hovercard-score-final">${visit.extra || 'FINAL'}</span>
+            <span class="hovercard-score-final">${visit.extra || t('final')}</span>
             <div class="hovercard-score-line">
               ${teamLogo(visit.awayTeam, 18)}
               <span class="hovercard-score-name">${shortName(visit.awayTeam)}</span>
@@ -657,7 +658,7 @@ ALL_MLB_STADIUMS.forEach(stadium => {
     const popupContent = `
       <div class="popup-name">${stadium.name}</div>
       <div class="popup-team">${stadium.team}</div>
-      <div class="popup-status unvisited">Not Yet</div>
+      <div class="popup-status unvisited">${t('notYet')}</div>
     `;
 
     marker.bindPopup(popupContent, {
@@ -898,14 +899,14 @@ timelineSlider.value = uniqueDates.length;
 
 function formatTimelineDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' });
 }
 
 function applyTimeline(idx) {
   const showAll = idx >= uniqueDates.length;
   const cutoffDate = showAll ? null : uniqueDates[idx];
 
-  timelineLabel.textContent = showAll ? 'All Time' : formatTimelineDate(cutoffDate);
+  timelineLabel.textContent = showAll ? t('allTime') : formatTimelineDate(cutoffDate);
 
   const visitedAtTime = new Set();
   if (showAll) {
@@ -926,7 +927,7 @@ function applyTimeline(idx) {
       <div class="popup-name">${e.stadium.name}</div>
       <div class="popup-team">${e.stadium.team}</div>
       <div class="popup-status ${wasVisited ? 'visited' : 'unvisited'}">
-        ${wasVisited ? '✓ Visited' : 'Not Yet'}
+        ${wasVisited ? '✓ ' + t('visited') : t('notYet')}
       </div>
     `;
     e.marker.setPopupContent(popupContent);
@@ -1004,3 +1005,66 @@ playBtn.addEventListener('click', () => {
 setTimeout(() => {
   document.getElementById('sidebar').classList.remove('collapsed');
 }, 500);
+
+// i18n: update all static text
+function applyLanguage() {
+  document.title = t('pageTitle');
+  document.querySelector('.logo h1').textContent = t('appName');
+  document.querySelector('.tagline').textContent = t('tagline');
+  document.querySelector('.sidebar-header h2').textContent = t('myVisits');
+  document.getElementById('timeline-label').textContent = t('allTime');
+  document.getElementById('lang-toggle').textContent = getLang().toUpperCase();
+
+  const legendItems = document.querySelectorAll('.legend-item');
+  if (legendItems[0]) legendItems[0].lastChild.textContent = ' ' + t('visited');
+  if (legendItems[1]) legendItems[1].lastChild.textContent = ' ' + t('notYet');
+
+  // Panel section headers
+  const pitchingH3 = document.querySelector('#panel-pitchers-section h3');
+  if (pitchingH3) pitchingH3.textContent = t('pitching');
+  const gameDayH3 = document.querySelector('#panel-details-section h3');
+  if (gameDayH3) gameDayH3.textContent = t('gameDay');
+  const boxScoreH3 = document.querySelector('#panel-boxscore-section h3');
+  if (boxScoreH3) boxScoreH3.textContent = t('boxScore');
+  const otherGamesH3 = document.querySelector('#panel-extra-games h3');
+  if (otherGamesH3) otherGamesH3.textContent = t('otherGames');
+
+  const mlbLink = document.getElementById('panel-boxscore');
+  if (mlbLink) {
+    const svg = mlbLink.querySelector('svg');
+    mlbLink.textContent = '';
+    mlbLink.append(t('viewOnMlb') + ' ', svg);
+  }
+
+  const loadingEl = document.getElementById('boxscore-loading');
+  if (loadingEl && loadingEl.style.display !== 'none') {
+    loadingEl.textContent = t('loadingBoxScore');
+  }
+
+  // Rebuild year filter chips
+  const filterContainer = document.getElementById('year-filters');
+  const activeYear = filterContainer.querySelector('.filter-chip.active')?.dataset.year || 'all';
+  filterContainer.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'filter-chip' + (activeYear === 'all' ? ' active' : '');
+  allChip.textContent = t('all');
+  allChip.dataset.year = 'all';
+  filterContainer.appendChild(allChip);
+  visitedYears.forEach(year => {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (activeYear === String(year) ? ' active' : '');
+    chip.textContent = year;
+    chip.dataset.year = year;
+    filterContainer.appendChild(chip);
+  });
+
+  renderVisitList(activeYear === 'all' ? null : parseInt(activeYear));
+}
+
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  setLang(getLang() === 'en' ? 'es' : 'en');
+  applyLanguage();
+  applyTimeline(parseInt(timelineSlider.value));
+});
+
+applyLanguage();
