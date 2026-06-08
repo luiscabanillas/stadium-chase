@@ -2025,18 +2025,21 @@ body {
 /* ── Responsive ── */
 @media (max-width: 768px) {
   body {
-    overflow: auto;
-    height: auto;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
   }
 
   #app {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     position: relative;
+    overflow: hidden;
   }
 
-  /* Header: compact bar between map and list */
+  /* Header: fixed at top */
   #header {
     position: relative;
     top: auto;
@@ -2047,9 +2050,8 @@ body {
     gap: 10px;
     z-index: 20;
     flex-shrink: 0;
-    order: 1;
+    order: 0;
     border: none;
-    border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     background: var(--bg-dark);
     backdrop-filter: none;
@@ -2092,7 +2094,7 @@ body {
     display: none;
   }
 
-  /* Sidebar: full height list */
+  /* Sidebar: fills remaining space, only the list scrolls */
   #sidebar {
     position: relative;
     top: auto;
@@ -2108,11 +2110,13 @@ body {
     min-height: 0;
     overflow: hidden;
     z-index: 10;
-    order: 2;
+    order: 1;
     background: var(--bg-dark);
     backdrop-filter: none;
     box-shadow: none;
     transition: none;
+    display: flex;
+    flex-direction: column;
   }
 
   #sidebar.collapsed {
@@ -2125,8 +2129,17 @@ body {
     display: none;
   }
 
+  .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .sidebar-header {
     padding: 12px 16px 8px;
+    flex-shrink: 0;
   }
 
   .sidebar-header h2 {
@@ -2136,6 +2149,11 @@ body {
 
   #visit-list {
     padding: 8px;
+    padding-bottom: 52px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .visit-item {
@@ -2149,6 +2167,24 @@ body {
 
   .visit-item-detail {
     font-size: 0.68rem;
+  }
+
+  /* Scratch card button: fixed at bottom */
+  .scratchcard-btn {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    order: unset;
+    margin: 0;
+    border-radius: 0;
+    justify-content: center;
+    padding: 12px 16px;
+    border: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg-dark);
+    backdrop-filter: none;
+    z-index: 15;
   }
 
   /* Stadium panel: full screen overlay */
