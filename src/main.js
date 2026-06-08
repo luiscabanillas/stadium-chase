@@ -185,6 +185,22 @@ function getStadiumImage(stadium) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+const WEATHER_ES = {
+  'Sunny': 'Soleado',
+  'Clear': 'Despejado',
+  'Partly Cloudy': 'Parcialmente Nublado',
+  'Cloudy': 'Nublado',
+  'Overcast': 'Cubierto',
+  'Rain': 'Lluvia',
+  'Roof Closed': 'Techo Cerrado',
+};
+
+function translateWeather(weather) {
+  if (!weather) return '';
+  if (getLang() === 'es') return WEATHER_ES[weather] || weather;
+  return weather;
+}
+
 function getWeatherEmoji(weather) {
   if (!weather) return '';
   const w = weather.toLowerCase();
@@ -417,7 +433,7 @@ function showPanel(stadium) {
     detailsSection.style.display = '';
     document.querySelector('#detail-date .detail-value').textContent = formatDate(visit.date);
     document.querySelector('#detail-attendance .detail-value').textContent = formatAttendance(visit.attendance);
-    const weatherText = visit.weather || '';
+    const weatherText = translateWeather(visit.weather);
     const tempVal = visit.temp
       ? (getLang() === 'es' ? `${Math.round((visit.temp - 32) * 5 / 9)}°C` : `${visit.temp}°F`)
       : '';
