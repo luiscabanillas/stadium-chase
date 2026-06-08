@@ -20,6 +20,9 @@ const translations = {
     startingLineup: 'Starting Lineup',
     substitutes: 'Substitutes',
     pageTitle: 'Stadium Chase — MLB Ballpark Tracker',
+    scratchCard: 'My Scratch Card',
+    scratchCardTitle: 'MAJOR LEAGUE BALLPARKS',
+    scratchCardSubtitle: 'SCRATCH CARD',
   },
   es: {
     appName: 'Stadium Chase',
@@ -42,6 +45,9 @@ const translations = {
     startingLineup: 'Alineación Titular',
     substitutes: 'Suplentes',
     pageTitle: 'Stadium Chase — Registro de Estadios de MLB',
+    scratchCard: 'Mi Tarjeta',
+    scratchCardTitle: 'ESTADIOS DE GRANDES LIGAS',
+    scratchCardSubtitle: 'TARJETA DE RASPAR',
   },
 };
 

@@ -40,6 +40,27 @@ function teamLogo(teamName, size = 24) {
   return `<img src="https://www.mlbstatic.com/team-logos/team-cap-on-dark/${id}.svg" width="${size}" height="${size}" alt="" style="vertical-align:middle" />`;
 }
 
+// Light color overrides for teams whose primary is too dark on dark backgrounds
+const PANEL_COLOR_OVERRIDES = {
+  "Chicago White Sox": "#C4CED4",
+  "Pittsburgh Pirates": "#FDB827",
+  "San Diego Padres": "#FFC425",
+  "Oakland Athletics": "#EFB21E",
+  "Detroit Tigers": "#FA4616",
+  "Tampa Bay Rays": "#8FBCE6",
+  "Cleveland Guardians": "#E31937",
+  "Seattle Mariners": "#005C5C",
+  "New York Yankees": "#5A8DBE",
+  "Houston Astros": "#EB6E1F",
+  "Minnesota Twins": "#D31145",
+  "New York Mets": "#FF5910",
+  "Colorado Rockies": "#8686b3",
+};
+
+function panelTeamColor(team) {
+  return PANEL_COLOR_OVERRIDES[team] || TEAM_COLORS[team]?.primary;
+}
+
 const visitMap = new Map();
 VISITS.forEach(v => visitMap.set(v.stadiumId, v));
 
@@ -346,7 +367,7 @@ function showPanel(stadium) {
 
   document.getElementById('panel-title').innerHTML = `${teamLogo(stadium.team, 26)} ${stadium.name} ${numBadge}`;
   document.getElementById('panel-team').textContent = stadium.team;
-  document.getElementById('panel-team').style.color = colors?.primary || '#888';
+  document.getElementById('panel-team').style.color = panelTeamColor(stadium.team) || '#888';
 
   const img = document.getElementById('panel-image');
   img.alt = stadium.name;
@@ -503,7 +524,11 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.add('hidden');
 }
 
-// Lightbox removed — hero image is display-only
+document.getElementById('panel-hero').addEventListener('click', () => {
+  const img = document.getElementById('panel-image');
+  const src = img.dataset.fullSrc || img.src;
+  if (src && !src.startsWith('data:')) openLightbox(src);
+});
 
 document.getElementById('lightbox').addEventListener('click', (e) => {
   if (e.target.id !== 'lightbox-img') closeLightbox();
@@ -630,7 +655,7 @@ ALL_MLB_STADIUMS.forEach(stadium => {
         </div>
         <div class="hovercard-body">
           <div class="hovercard-title">${teamLogo(stadium.team, 20)} ${stadium.name}</div>
-          <div class="hovercard-team" style="color:${TEAM_COLORS[stadium.team]?.primary || '#888'}">${stadium.team}</div>
+          <div class="hovercard-team" style="color:${panelTeamColor(stadium.team) || '#888'}">${stadium.team}</div>
           <div class="hovercard-score">
             <span class="hovercard-score-final">${visit.extra || t('final')}</span>
             <div class="hovercard-score-line">
@@ -1004,6 +1029,7 @@ playBtn.addEventListener('click', () => {
 
 setTimeout(() => {
   document.getElementById('sidebar').classList.remove('collapsed');
+  map.invalidateSize();
 }, 500);
 
 // i18n: update all static text
@@ -1014,6 +1040,11 @@ function applyLanguage() {
   document.querySelector('.sidebar-header h2').textContent = t('myVisits');
   document.getElementById('timeline-label').textContent = t('allTime');
   document.getElementById('lang-toggle').textContent = getLang().toUpperCase();
+  document.getElementById('scratchcard-btn-label').textContent = t('scratchCard');
+  const scTitle = document.querySelector('.scratchcard-title');
+  if (scTitle) scTitle.textContent = t('scratchCardTitle');
+  const scSub = document.getElementById('sc-subtitle');
+  if (scSub) scSub.textContent = t('scratchCardSubtitle');
 
   const legendItems = document.querySelectorAll('.legend-item');
   if (legendItems[0]) legendItems[0].lastChild.textContent = ' ' + t('visited');
@@ -1068,3 +1099,80 @@ document.getElementById('lang-toggle').addEventListener('click', () => {
 });
 
 applyLanguage();
+
+// ── Scratch Card ──
+const STADIUM_CITIES = {
+  'yankee-stadium': 'Bronx, New York',
+  'fenway-park': 'Boston, Massachusetts',
+  'camden-yards': 'Baltimore, Maryland',
+  'tropicana-field': 'St. Petersburg, Florida',
+  'rogers-centre': 'Toronto, Ontario',
+  'guaranteed-rate': 'Chicago, Illinois',
+  'progressive-field': 'Cleveland, Ohio',
+  'comerica-park': 'Detroit, Michigan',
+  'kauffman-stadium': 'Kansas City, Missouri',
+  'target-field': 'Minneapolis, Minnesota',
+  'minute-maid': 'Houston, Texas',
+  'angel-stadium': 'Anaheim, California',
+  'oakland-coliseum': 'Oakland, California',
+  't-mobile-park': 'Seattle, Washington',
+  'globe-life': 'Arlington, Texas',
+  'truist-park': 'Atlanta, Georgia',
+  'loandepot-park': 'Miami, Florida',
+  'citi-field': 'Queens, New York',
+  'citizens-bank': 'Philadelphia, Pennsylvania',
+  'nationals-park': 'Washington, D.C.',
+  'wrigley-field': 'Chicago, Illinois',
+  'great-american': 'Cincinnati, Ohio',
+  'american-family': 'Milwaukee, Wisconsin',
+  'pnc-park': 'Pittsburgh, Pennsylvania',
+  'busch-stadium': 'St. Louis, Missouri',
+  'chase-field': 'Phoenix, Arizona',
+  'coors-field': 'Denver, Colorado',
+  'dodger-stadium': 'Los Angeles, California',
+  'petco-park': 'San Diego, California',
+  'oracle-park': 'San Francisco, California',
+};
+
+const SC_DIVISIONS = {
+  'al-east': ALL_MLB_STADIUMS.slice(0, 5),
+  'al-central': ALL_MLB_STADIUMS.slice(5, 10),
+  'al-west': ALL_MLB_STADIUMS.slice(10, 15),
+  'nl-east': ALL_MLB_STADIUMS.slice(15, 20),
+  'nl-central': ALL_MLB_STADIUMS.slice(20, 25),
+  'nl-west': ALL_MLB_STADIUMS.slice(25, 30),
+};
+
+function buildScratchCard() {
+  Object.entries(SC_DIVISIONS).forEach(([key, stadiums]) => {
+    const grid = document.getElementById('sc-' + key);
+    if (!grid) return;
+    grid.innerHTML = stadiums.map(s => {
+      const bp = STADIUM_BLUEPRINTS[s.id];
+      const isVisited = visitMap.has(s.id);
+      const city = STADIUM_CITIES[s.id] || '';
+      const visit = visitMap.get(s.id);
+      const dateOverlay = visit
+        ? `<span class="sc-date">${formatShortDate(visit.date)}</span>`
+        : '';
+      return `<div class="sc-stadium ${isVisited ? 'visited' : ''}">
+        <div class="sc-blueprint">
+          ${bp ? `<img src="${bp.replace('/100/', '/512/')}" alt="${s.name}" />` : ''}
+          ${dateOverlay}
+        </div>
+        <div class="sc-name">${s.name}</div>
+        <div class="sc-city">${city}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
+buildScratchCard();
+
+document.getElementById('scratchcard-btn').addEventListener('click', () => {
+  document.getElementById('scratchcard').classList.remove('hidden');
+});
+
+document.getElementById('scratchcard-close').addEventListener('click', () => {
+  document.getElementById('scratchcard').classList.add('hidden');
+});
