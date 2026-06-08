@@ -418,7 +418,10 @@ function showPanel(stadium) {
     document.querySelector('#detail-date .detail-value').textContent = formatDate(visit.date);
     document.querySelector('#detail-attendance .detail-value').textContent = formatAttendance(visit.attendance);
     const weatherText = visit.weather || '';
-    const tempText = visit.temp ? `${visit.temp}°F` : '';
+    const tempVal = visit.temp
+      ? (getLang() === 'es' ? `${Math.round((visit.temp - 32) * 5 / 9)}°C` : `${visit.temp}°F`)
+      : '';
+    const tempText = tempVal;
     document.querySelector('#detail-weather .detail-value').textContent = [weatherText, tempText].filter(Boolean).join(', ');
     document.querySelector('#detail-weather .detail-icon').textContent = getWeatherEmoji(visit.weather);
     document.querySelector('#detail-duration .detail-value').textContent = visit.duration ? formatDuration(visit.duration) : '—';
