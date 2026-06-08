@@ -266,41 +266,52 @@ function renderLinescore(ls, visit) {
 function renderLineups(boxscore, visit) {
   let html = '';
 
+  // Position a player entered the game at (their starting position when a
+  // starter, or the role they came in as for a sub), falling back to their
+  // final position if the per-game history is unavailable.
+  const enterPos = p => p.allPositions?.[0]?.abbreviation || p.position?.abbreviation;
+
   ['away', 'home'].forEach(side => {
     const team = boxscore.teams[side];
     const teamName = side === 'away' ? visit.awayTeam : visit.homeTeam;
     const players = team.players;
 
-    // Starting lineup from battingOrder
-    const starterIds = team.battingOrder || [];
-    const starterSet = new Set(starterIds.map(String));
-    const starters = starterIds.map(id => {
-      const p = players['ID' + id];
-      return p ? { name: p.person.fullName, pos: p.position?.abbreviation } : null;
-    }).filter(Boolean);
-
-    // Starting pitcher = first in pitchers array
+    // Starting pitcher = first pitcher to appear in the game.
     const spId = team.pitchers?.[0];
-    const sp = spId ? players['ID' + spId] : null;
+    const sp = spId != null ? players['ID' + spId] : null;
     const spName = sp?.person?.fullName;
 
-    // Subs = anyone in batters or pitchers who is NOT in the starter set and NOT the SP
-    const allIds = new Set([...(team.batters || []).map(String), ...(team.pitchers || []).map(String)]);
-    const subPositionPlayers = [];
-    const subPitchers = [];
+    // Each player's battingOrder code encodes who actually started: the
+    // hundreds digit is the lineup spot (1-9) and the last two digits are the
+    // substitution sequence. Starters end in "00" (e.g. "600"); anyone with a
+    // non-zero suffix (e.g. "601") entered the game as a substitute. The
+    // team-level battingOrder array can't be used here because it reflects the
+    // FINAL occupant of each spot, so a late sub would masquerade as a starter.
+    const batted = Object.values(players).filter(
+      p => p.battingOrder && String(p.person?.id) !== String(spId)
+    );
 
-    allIds.forEach(id => {
-      if (starterSet.has(id) || id === String(spId)) return;
-      const p = players['ID' + id];
-      if (!p) return;
-      const isPitcher = (team.pitchers || []).map(String).includes(id);
-      const entry = { name: p.person.fullName, pos: p.position?.abbreviation };
-      if (isPitcher) {
-        subPitchers.push(entry);
-      } else {
-        subPositionPlayers.push(entry);
-      }
-    });
+    const starters = batted
+      .filter(p => parseInt(p.battingOrder, 10) % 100 === 0)
+      .sort((a, b) => parseInt(a.battingOrder, 10) - parseInt(b.battingOrder, 10))
+      .map(p => ({
+        spot: parseInt(p.battingOrder, 10) / 100,
+        name: p.person.fullName,
+        pos: enterPos(p),
+      }));
+
+    // Position-player subs: batted, but entered after the original starter.
+    const subPositionPlayers = batted
+      .filter(p => parseInt(p.battingOrder, 10) % 100 !== 0)
+      .sort((a, b) => parseInt(a.battingOrder, 10) - parseInt(b.battingOrder, 10))
+      .map(p => ({ name: p.person.fullName, pos: enterPos(p) }));
+
+    // Relief pitchers: every pitcher after the starter, in appearance order.
+    const subPitchers = (team.pitchers || [])
+      .filter(id => String(id) !== String(spId))
+      .map(id => players['ID' + id])
+      .filter(Boolean)
+      .map(p => ({ name: p.person.fullName }));
 
     html += `<div class="lineup-team">`;
     html += `<div class="lineup-header">${teamLogo(teamName, 16)} ${teamName}</div>`;
@@ -308,8 +319,8 @@ function renderLineups(boxscore, visit) {
     // Starting lineup
     html += `<div class="lineup-section-label">${t('startingLineup')}</div>`;
     html += `<div class="lineup-list">`;
-    starters.forEach((s, i) => {
-      html += `<div class="lineup-player"><span class="lineup-order">${i + 1}</span><span class="lineup-name">${s.name}</span><span class="lineup-pos">${s.pos}</span></div>`;
+    starters.forEach(s => {
+      html += `<div class="lineup-player"><span class="lineup-order">${s.spot}</span><span class="lineup-name">${s.name}</span><span class="lineup-pos">${s.pos}</span></div>`;
     });
     if (spName) {
       html += `<div class="lineup-player lineup-sp"><span class="lineup-order">P</span><span class="lineup-name">${spName}</span><span class="lineup-pos">SP</span></div>`;
