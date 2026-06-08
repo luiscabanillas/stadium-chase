@@ -155,7 +155,7 @@ function makeMarkerIcon(stadium, visited) {
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString(getDateLocale(), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function formatDuration(mins) {
