@@ -441,6 +441,7 @@ function showPanel(stadium) {
   renderExtraGames(stadium.id);
 
   panel.classList.remove('hidden');
+  panel.querySelector('.panel-scroll').scrollTop = 0;
   panel.style.animation = 'none';
   panel.offsetHeight;
   panel.style.animation = '';
