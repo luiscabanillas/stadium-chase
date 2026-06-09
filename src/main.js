@@ -158,6 +158,28 @@ function formatDate(dateStr) {
   return d.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+const HERMOSILLO_LAT = 29.0729;
+const HERMOSILLO_LNG = -110.9559;
+
+function distanceFromHermosillo(lat, lng) {
+  const R = 6371;
+  const dLat = (lat - HERMOSILLO_LAT) * Math.PI / 180;
+  const dLng = (lng - HERMOSILLO_LNG) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(HERMOSILLO_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return km;
+}
+
+function formatDistance(km) {
+  if (getLang() === 'es') {
+    return `${Math.round(km).toLocaleString('es-MX')} km`;
+  }
+  const miles = km * 0.621371;
+  return `${Math.round(miles).toLocaleString('en-US')} mi`;
+}
+
 function formatDuration(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -440,9 +462,15 @@ function showPanel(stadium) {
       svLine.style.display = 'none';
     }
 
+    // Hero date overlay
+    const heroDate = document.getElementById('hero-date');
+    heroDate.textContent = formatDate(visit.date);
+    heroDate.style.display = 'block';
+
     // Details
     detailsSection.style.display = '';
-    document.querySelector('#detail-date .detail-value').textContent = formatDate(visit.date);
+    const km = distanceFromHermosillo(stadium.lat, stadium.lng);
+    document.querySelector('#detail-distance .detail-value').textContent = formatDistance(km);
     document.querySelector('#detail-attendance .detail-value').textContent = formatAttendance(visit.attendance);
     const weatherText = translateWeather(visit.weather);
     const tempVal = visit.temp
@@ -461,6 +489,7 @@ function showPanel(stadium) {
     badge.textContent = t('notYetVisited');
     badge.className = 'visited-badge not-visited';
     photoHint.style.display = 'none';
+    document.getElementById('hero-date').style.display = 'none';
     scoreboard.style.display = 'none';
     pitchersSection.style.display = 'none';
     detailsSection.style.display = 'none';
@@ -1072,6 +1101,8 @@ function applyLanguage() {
   document.getElementById('timeline-label').textContent = t('allTime');
   document.getElementById('lang-toggle').textContent = getLang().toUpperCase();
   document.getElementById('scratchcard-btn-label').textContent = t('scratchCard');
+  document.getElementById('legend-title').textContent = t('legendTitle');
+  document.getElementById('legend-text').innerHTML = t('legendText');
   const scTitle = document.querySelector('.scratchcard-title');
   if (scTitle) scTitle.textContent = t('scratchCardTitle');
   const scSub = document.getElementById('sc-subtitle');

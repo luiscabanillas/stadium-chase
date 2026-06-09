@@ -23,6 +23,8 @@ const translations = {
     scratchCard: 'My Scratch Card',
     scratchCardTitle: 'MAJOR LEAGUE BALLPARKS',
     scratchCardSubtitle: 'SCRATCH CARD',
+    legendTitle: 'The Ritual',
+    legendText: 'Born and raised in Hermosillo, Sonora — a city where baseball runs deep. I set out to visit every MLB ballpark, always wearing my Naranjeros de Hermosillo jersey for the official photo.<br><br>At every new stadium, I arrive early to take the traditional picture, then tour the park and soak in its landmarks. I stay for the whole game, and never leave without my souvenir soda — collecting the cup is part of the ritual.',
   },
   es: {
     appName: 'Stadium Chase',
@@ -48,6 +50,8 @@ const translations = {
     scratchCard: 'Mi Tarjeta',
     scratchCardTitle: 'ESTADIOS DE GRANDES LIGAS',
     scratchCardSubtitle: 'TARJETA DE RASPAR',
+    legendTitle: 'El Ritual',
+    legendText: 'Nacido y criado en Hermosillo, Sonora — una ciudad donde el béisbol se lleva en la sangre. Me propuse visitar todos los estadios de MLB, siempre con mi jersey de Naranjeros de Hermosillo para la foto oficial.<br><br>En cada estadio nuevo, llego temprano para la foto tradicional, recorro el parque y conozco sus rincones. Me quedo a disfrutar todo el juego, y nunca me voy sin mi refresco de souvenir — coleccionar el vaso es parte del ritual.',
   },
 };
 
