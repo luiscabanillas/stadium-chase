@@ -2173,7 +2173,9 @@ body {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    z-index: 10;
+    /* z-index:auto so the sidebar doesn't create a stacking context that
+       would trap the fixed ritual legend below the scratch-card button */
+    z-index: auto;
     order: 1;
     background: var(--bg-dark);
     backdrop-filter: none;
