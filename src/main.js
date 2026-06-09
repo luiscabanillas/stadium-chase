@@ -1238,3 +1238,18 @@ document.getElementById('scratchcard-btn').addEventListener('click', () => {
 document.getElementById('scratchcard-close').addEventListener('click', () => {
   document.getElementById('scratchcard').classList.add('hidden');
 });
+
+// Ritual legend slide-in (mobile)
+const ritualLegend = document.getElementById('sidebar-legend');
+const ritualBackdrop = document.getElementById('ritual-backdrop');
+const openRitual = () => {
+  ritualLegend.classList.add('open');
+  ritualBackdrop.classList.add('open');
+};
+const closeRitual = () => {
+  ritualLegend.classList.remove('open');
+  ritualBackdrop.classList.remove('open');
+};
+document.getElementById('ritual-toggle').addEventListener('click', openRitual);
+document.getElementById('ritual-close').addEventListener('click', closeRitual);
+ritualBackdrop.addEventListener('click', closeRitual);
