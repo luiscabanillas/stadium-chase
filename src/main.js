@@ -174,10 +174,10 @@ function distanceFromHermosillo(lat, lng) {
 
 function formatDistance(km) {
   if (getLang() === 'es') {
-    return `${Math.round(km).toLocaleString('es-MX')} km`;
+    return `${Math.round(km).toLocaleString('es-MX')} km de HMO`;
   }
   const miles = km * 0.621371;
-  return `${Math.round(miles).toLocaleString('en-US')} mi`;
+  return `${Math.round(miles).toLocaleString('en-US')} mi away from HMO`;
 }
 
 function formatDuration(mins) {
