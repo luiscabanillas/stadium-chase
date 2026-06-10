@@ -407,8 +407,14 @@ function showPanel(stadium) {
 
   const detailBpEl = document.getElementById('panel-blueprint-detail');
   if (blueprintDetail) {
-    detailBpEl.innerHTML = `<img src="${blueprintDetail}" alt="${stadium.name} blueprint" />`;
+    detailBpEl.innerHTML = `<div class="img-spinner"></div><img src="${blueprintDetail}" alt="${stadium.name} blueprint" style="visibility:hidden" />`;
     detailBpEl.style.display = '';
+    const bpImg = detailBpEl.querySelector('img');
+    const bpSpinner = detailBpEl.querySelector('.img-spinner');
+    const revealBp = () => { bpImg.style.visibility = ''; bpSpinner.remove(); };
+    bpImg.onload = revealBp;
+    bpImg.onerror = revealBp;
+    if (bpImg.complete) revealBp();
   } else {
     detailBpEl.innerHTML = '';
     detailBpEl.style.display = 'none';
@@ -419,7 +425,10 @@ function showPanel(stadium) {
   document.getElementById('panel-team').style.color = panelTeamColor(stadium.team) || '#888';
 
   const img = document.getElementById('panel-image');
+  const heroSpinner = document.getElementById('hero-spinner');
   img.alt = stadium.name;
+  heroSpinner.classList.remove('hidden');
+  img.onload = () => heroSpinner.classList.add('hidden');
   img.onerror = () => { img.onerror = null; img.src = fallbackSrc; img.dataset.fullSrc = ''; };
   img.dataset.fullSrc = photoSrc || '';
   img.src = photoSrc || fallbackSrc;
