@@ -77,6 +77,43 @@ EXTRA_GAMES.forEach(g => {
   extraGamesMap.get(g.stadiumId).push(g);
 });
 
+// Places I lived (home base over time), sorted by move-in date.
+const HOMES = [
+  { id: 'bellevue',    city: 'Bellevue, WA',    lat: 47.6101, lng: -122.2015, start: '2015-02-01', teams: ['Seattle Mariners'] },
+  { id: 'san-jose',    city: 'San Jose, CA',    lat: 37.3382, lng: -121.8863, start: '2016-11-01', teams: ['San Francisco Giants', 'Oakland Athletics'] },
+  { id: 'bloomington', city: 'Bloomington, MN', lat: 44.8408, lng:  -93.2983, start: '2017-08-01', teams: ['Minnesota Twins'] },
+  { id: 'lynnwood',    city: 'Lynnwood, WA',    lat: 47.8279, lng: -122.3054, start: '2019-05-01', teams: ['Seattle Mariners'] },
+];
+
+// The home base in effect on a given date string ("YYYY-MM-DD").
+function homeAtDate(dateStr) {
+  let home = HOMES[0];
+  for (const h of HOMES) {
+    if (dateStr >= h.start) home = h; else break;
+  }
+  return home;
+}
+
+const CURRENT_HOME = HOMES[HOMES.length - 1];
+
+// Visits grouped by date, for the playback travel animation.
+const visitsByDate = new Map();
+VISITS.forEach(v => {
+  if (!visitsByDate.has(v.date)) visitsByDate.set(v.date, []);
+  visitsByDate.get(v.date).push(v);
+});
+
+// Generic great-circle distance in km between two lat/lng points.
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const SHORT_NAMES = {
   "Red Sox": "Red Sox", "White Sox": "White Sox", "Blue Jays": "Blue Jays",
   "National League": "NL", "American League": "AL",
@@ -776,14 +813,175 @@ ALL_MLB_STADIUMS.forEach(stadium => {
   marker.on('mouseover', () => {
     marker.openPopup();
     highlightLeg(entry);
+    showHomeLine(entry);
   });
   marker.on('mouseout', () => {
     marker.closePopup();
     unhighlightLeg(entry);
+    hideHomeLine();
   });
 
   markerEntries.push(entry);
 });
+
+const entryById = new Map();
+markerEntries.forEach(e => entryById.set(e.stadium.id, e));
+
+// ---- Home base marker & travel animations -------------------------------
+
+function homeIcon(home, moving) {
+  return L.divIcon({
+    html: `<div class="home-marker ${moving ? 'moving' : ''}"><span class="home-glyph">🏠</span></div>`,
+    className: 'home-marker-wrap',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+}
+
+const homeMarker = L.marker([CURRENT_HOME.lat, CURRENT_HOME.lng], {
+  icon: homeIcon(CURRENT_HOME),
+  zIndexOffset: 1500,
+  interactive: false,
+}).addTo(map);
+
+let currentHomeId = CURRENT_HOME.id;
+let homeAnimating = false;
+
+// Screen-space heading (degrees, 0 = east) from one latlng to another.
+function headingDeg(from, to) {
+  const p1 = map.latLngToContainerPoint(from);
+  const p2 = map.latLngToContainerPoint(to);
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+}
+
+// Animate a Leaflet marker from one point to another along a screen-space arc.
+function flyMarker(marker, from, to, duration, curveAmt) {
+  return new Promise(resolve => {
+    const p1 = map.latLngToContainerPoint(from);
+    const p2 = map.latLngToContainerPoint(to);
+    const dx = p2.x - p1.x, dy = p2.y - p1.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const px = -dy / len, py = dx / len;          // perpendicular unit vector
+    const bump = curveAmt * len;
+    let startTs = null;
+    function frame(now) {
+      if (startTs === null) startTs = now;
+      const t = Math.min(1, (now - startTs) / duration);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOutQuad
+      const arc = bump * Math.sin(Math.PI * e);
+      const x = p1.x + dx * e + px * arc;
+      const y = p1.y + dy * e + py * arc;
+      marker.setLatLng(map.containerPointToLatLng([x, y]));
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function travelIcon(kind, angle) {
+  let inner;
+  if (kind === 'plane') {
+    inner = `<span class="travel-glyph" style="transform:rotate(${angle + 45}deg)">✈️</span>`;
+  } else {
+    const flip = (angle > -90 && angle < 90) ? 'scaleX(-1)' : '';
+    inner = `<span class="travel-glyph" style="transform:${flip}">🚗</span>`;
+  }
+  return L.divIcon({ html: inner, className: 'travel-marker', iconSize: [26, 26], iconAnchor: [13, 13] });
+}
+
+// Fly an airplane (long trips) or drive a car (short trips) from home to the
+// stadium and back. Used during timeline playback.
+async function animateTravel(home, entry) {
+  const from = L.latLng(home.lat, home.lng);
+  const to = entry.marker.getLatLng();
+  const km = haversineKm(home.lat, home.lng, to.lat, to.lng);
+  const plane = km > 500;
+  const kind = plane ? 'plane' : 'car';
+  const curve = plane ? 0.22 : 0.05;
+  const dur = plane ? 950 : 750;
+
+  const ghost = L.marker(from, {
+    icon: travelIcon(kind, headingDeg(from, to)),
+    zIndexOffset: 3000,
+    interactive: false,
+  }).addTo(map);
+
+  await flyMarker(ghost, from, to, dur, curve);
+  ghost.setIcon(travelIcon(kind, headingDeg(to, from)));
+  await flyMarker(ghost, to, from, dur, -curve);
+  map.removeLayer(ghost);
+}
+
+function showToast(text) {
+  let toast = document.getElementById('move-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'move-toast';
+    toast.className = 'move-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.classList.remove('show');
+  // restart the CSS animation
+  void toast.offsetWidth;
+  toast.classList.add('show');
+}
+
+// Place / move the home marker for the given home base. When `animate` is set
+// and the home actually changed, slide the marker over (a "move" animation).
+function setHome(home, animate) {
+  if (animate && currentHomeId && currentHomeId !== home.id && !homeAnimating) {
+    const from = homeMarker.getLatLng();
+    const to = L.latLng(home.lat, home.lng);
+    homeAnimating = true;
+    homeMarker.setIcon(homeIcon(home, true));
+    showToast(`${getLang() === 'es' ? 'Mudanza a' : 'Moved to'} ${home.city}`);
+    flyMarker(homeMarker, from, to, 1500, 0.12).then(() => {
+      homeMarker.setLatLng(to);
+      homeMarker.setIcon(homeIcon(home));
+      homeAnimating = false;
+    });
+  } else if (!homeAnimating) {
+    homeMarker.setLatLng([home.lat, home.lng]);
+    homeMarker.setIcon(homeIcon(home));
+  }
+  currentHomeId = home.id;
+}
+
+// ---- Hover line from a stadium back to the home I traveled from ----------
+
+let hoverLine = null;
+
+function showHomeLine(entry) {
+  const stadium = entry.stadium;
+  const visit = visitMap.get(stadium.id);
+  const home = visit ? homeAtDate(visit.date)
+    : (currentHomeId ? HOMES.find(h => h.id === currentHomeId) || CURRENT_HOME : CURRENT_HOME);
+  const to = entry.marker.getLatLng();
+  const km = haversineKm(home.lat, home.lng, to.lat, to.lng);
+
+  hideHomeLine();
+  hoverLine = L.polyline([[home.lat, home.lng], [to.lat, to.lng]], {
+    color: '#00d4aa',
+    weight: 2,
+    dashArray: '7 7',
+    opacity: 0.85,
+    interactive: false,
+    className: 'home-travel-line',
+  }).addTo(map);
+
+  const fromWord = getLang() === 'es' ? 'Desde' : 'From';
+  hoverLine.bindTooltip(`${fromWord} ${home.city} · ${formatDistance(km)}`, {
+    permanent: true,
+    direction: 'center',
+    className: 'home-line-tip',
+  }).openTooltip();
+}
+
+function hideHomeLine() {
+  if (hoverLine) { map.removeLayer(hoverLine); hoverLine = null; }
+}
 
 // Spiderfy: auto-expand overlapping markers with dotted lines to origin
 const SPIDER_PIXEL_THRESHOLD = 45;
@@ -1035,9 +1233,29 @@ function applyTimeline(idx) {
   circle.style.strokeDashoffset = `${circumference * (1 - count / 30)}`;
 }
 
+// Update the home marker (and, during playback, fire travel animations) for a
+// given timeline index.
+function playStep(idx, animate) {
+  if (idx >= uniqueDates.length) {
+    setHome(CURRENT_HOME, animate);
+    return;
+  }
+  const date = uniqueDates[idx];
+  const home = homeAtDate(date);
+  setHome(home, animate);
+  if (animate) {
+    (visitsByDate.get(date) || []).forEach(v => {
+      const entry = entryById.get(v.stadiumId);
+      if (entry) animateTravel(home, entry);
+    });
+  }
+}
+
 timelineSlider.addEventListener('input', () => {
   stopPlayback();
-  applyTimeline(parseInt(timelineSlider.value));
+  const idx = parseInt(timelineSlider.value);
+  applyTimeline(idx);
+  playStep(idx, false);
 });
 
 const playBtn = document.getElementById('timeline-play');
@@ -1055,11 +1273,12 @@ function startPlayback() {
   playIcon.style.display = 'none';
   pauseIcon.style.display = '';
 
-  const stepDuration = 1200;
+  const stepDuration = 2000;
   let lastStep = performance.now();
   current++;
   timelineSlider.value = current;
   applyTimeline(current);
+  playStep(current, true);
 
   function tick(now) {
     if (!playInterval) return;
@@ -1071,6 +1290,7 @@ function startPlayback() {
       }
       timelineSlider.value = current;
       applyTimeline(current);
+      playStep(current, true);
       lastStep = now;
     }
     playRaf = requestAnimationFrame(tick);
