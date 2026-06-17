@@ -103,6 +103,27 @@ VISITS.forEach(v => {
   visitsByDate.get(v.date).push(v);
 });
 
+// Multi-stadium trips I did by car in a single roadtrip. These animate as one
+// continuous drive (home → stops → home) instead of separate trips, fired on
+// the first stop's date.
+// `transit` is how I got between home and the region: 'car' for the Midwest
+// drives, 'plane' for trips I flew to and then drove between cities.
+const ROADTRIPS = [
+  { homeId: 'bloomington', stops: ['guaranteed-rate', 'wrigley-field'], transit: 'car' },   // Chicago: White Sox + Cubs
+  { homeId: 'bloomington', stops: ['busch-stadium', 'kauffman-stadium'], transit: 'car' },   // St. Louis + Kansas City
+  { homeId: 'lynnwood', stops: ['nationals-park', 'citizens-bank', 'camden-yards'], transit: 'plane' }, // DC + Philly + Baltimore
+];
+
+const roadtripStopIds = new Set();           // stadiumIds handled as part of a roadtrip
+const roadtripByTriggerDate = new Map();     // first-stop date -> { homeId, transit, stops (date-ordered) }
+ROADTRIPS.forEach(rt => {
+  const dated = rt.stops.filter(id => visitMap.get(id)?.date);
+  if (dated.length < 2) return;
+  const ordered = dated.slice().sort((a, b) => visitMap.get(a).date.localeCompare(visitMap.get(b).date));
+  ordered.forEach(id => roadtripStopIds.add(id));
+  roadtripByTriggerDate.set(visitMap.get(ordered[0]).date, { homeId: rt.homeId, transit: rt.transit || 'car', stops: ordered });
+});
+
 // Generic great-circle distance in km between two lat/lng points.
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -838,11 +859,12 @@ function homeIcon(home, moving) {
   });
 }
 
+// The home marker is only shown on the map while the timeline is playing.
 const homeMarker = L.marker([CURRENT_HOME.lat, CURRENT_HOME.lng], {
   icon: homeIcon(CURRENT_HOME),
   zIndexOffset: 1500,
   interactive: false,
-}).addTo(map);
+});
 
 let currentHomeId = CURRENT_HOME.id;
 let homeAnimating = false;
@@ -899,7 +921,7 @@ async function animateTravel(home, entry) {
   const plane = km > 500;
   const kind = plane ? 'plane' : 'car';
   const curve = plane ? 0.22 : 0.05;
-  const dur = plane ? 950 : 750;
+  const dur = plane ? 1700 : 750;
 
   const ghost = L.marker(from, {
     icon: travelIcon(kind, headingDeg(from, to)),
@@ -910,6 +932,35 @@ async function animateTravel(home, entry) {
   await flyMarker(ghost, from, to, dur, curve);
   ghost.setIcon(travelIcon(kind, headingDeg(to, from)));
   await flyMarker(ghost, to, from, dur, -curve);
+  map.removeLayer(ghost);
+}
+
+// A single continuous trip: home → each stop in order → home. The home↔region
+// legs use `transit` ('plane' if I flew there); legs between stops are always
+// driven.
+async function animateRoadtrip(home, entries, transit) {
+  const pts = [
+    L.latLng(home.lat, home.lng),
+    ...entries.map(e => e.marker.getLatLng()),
+    L.latLng(home.lat, home.lng),
+  ];
+  const ghost = L.marker(pts[0], {
+    icon: travelIcon(transit, headingDeg(pts[0], pts[1])),
+    zIndexOffset: 3000,
+    interactive: false,
+  }).addTo(map);
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const isTransit = i === 0 || i === pts.length - 2; // home→region / region→home
+    const kind = isTransit ? transit : 'car';
+    ghost.setIcon(travelIcon(kind, headingDeg(a, b)));
+    const legKm = haversineKm(a.lat, a.lng, b.lat, b.lng);
+    const dur = kind === 'plane' ? 1700 : Math.max(550, Math.min(2000, legKm * 2.2));
+    const curve = kind === 'plane' ? 0.22 : 0.06;
+    const last = i === pts.length - 2;
+    await flyMarker(ghost, a, b, dur, last ? -curve : curve);
+  }
   map.removeLayer(ghost);
 }
 
@@ -930,6 +981,7 @@ function showToast(text) {
 
 // Place / move the home marker for the given home base. When `animate` is set
 // and the home actually changed, slide the marker over (a "move" animation).
+// Returns a promise that resolves once any move animation has finished.
 function setHome(home, animate) {
   if (animate && currentHomeId && currentHomeId !== home.id && !homeAnimating) {
     const from = homeMarker.getLatLng();
@@ -937,7 +989,8 @@ function setHome(home, animate) {
     homeAnimating = true;
     homeMarker.setIcon(homeIcon(home, true));
     showToast(`${getLang() === 'es' ? 'Mudanza a' : 'Moved to'} ${home.city}`);
-    flyMarker(homeMarker, from, to, 1500, 0.12).then(() => {
+    currentHomeId = home.id;
+    return flyMarker(homeMarker, from, to, 1500, 0.12).then(() => {
       homeMarker.setLatLng(to);
       homeMarker.setIcon(homeIcon(home));
       homeAnimating = false;
@@ -947,6 +1000,7 @@ function setHome(home, animate) {
     homeMarker.setIcon(homeIcon(home));
   }
   currentHomeId = home.id;
+  return Promise.resolve();
 }
 
 // ---- Hover line from a stadium back to the home I traveled from ----------
@@ -1235,19 +1289,27 @@ function applyTimeline(idx) {
 
 // Update the home marker (and, during playback, fire travel animations) for a
 // given timeline index.
-function playStep(idx, animate) {
+async function playStep(idx, animate) {
   if (idx >= uniqueDates.length) {
     setHome(CURRENT_HOME, animate);
     return;
   }
   const date = uniqueDates[idx];
   const home = homeAtDate(date);
-  setHome(home, animate);
+  // Finish the "move" animation before any trips depart from the new home.
+  await setHome(home, animate);
   if (animate) {
     (visitsByDate.get(date) || []).forEach(v => {
+      if (roadtripStopIds.has(v.stadiumId)) return; // part of a consolidated roadtrip
       const entry = entryById.get(v.stadiumId);
       if (entry) animateTravel(home, entry);
     });
+    const rt = roadtripByTriggerDate.get(date);
+    if (rt) {
+      const rtHome = HOMES.find(h => h.id === rt.homeId) || home;
+      const entries = rt.stops.map(id => entryById.get(id)).filter(Boolean);
+      if (entries.length) animateRoadtrip(rtHome, entries, rt.transit);
+    }
   }
 }
 
@@ -1273,10 +1335,16 @@ function startPlayback() {
   playIcon.style.display = 'none';
   pauseIcon.style.display = '';
 
-  const stepDuration = 2000;
+  const stepDuration = 3600;
   let lastStep = performance.now();
   current++;
   timelineSlider.value = current;
+  // Snap the home marker to the starting home (no move animation), then reveal
+  // it for the duration of playback.
+  const startHome = current < uniqueDates.length ? homeAtDate(uniqueDates[current]) : CURRENT_HOME;
+  homeAnimating = false;
+  setHome(startHome, false);
+  if (!map.hasLayer(homeMarker)) map.addLayer(homeMarker);
   applyTimeline(current);
   playStep(current, true);
 
@@ -1306,6 +1374,7 @@ function stopPlayback() {
   playBtn.classList.remove('playing');
   playIcon.style.display = '';
   pauseIcon.style.display = 'none';
+  if (map.hasLayer(homeMarker)) map.removeLayer(homeMarker);
 }
 
 playBtn.addEventListener('click', () => {
