@@ -1493,9 +1493,6 @@ window.addEventListener('popstate', () => {
   applyView(detectView());
 });
 
-applyLanguage();
-applyView(detectView());
-
 // ── Scratch Card ──
 const STADIUM_CITIES = {
   'yankee-stadium': 'Bronx, New York',
@@ -1568,23 +1565,31 @@ buildScratchCard();
 // Photo card: visited ballparks only, ordered by visit date, sized for a social screenshot.
 function buildPhotoCard() {
   const visits = [...VISITS].sort((a, b) => a.date.localeCompare(b.date));
-  const nameById = new Map(ALL_MLB_STADIUMS.map(s => [s.id, s.name]));
+  const stadiumById = new Map(ALL_MLB_STADIUMS.map(s => [s.id, s]));
   const grid = document.getElementById('pc-grid');
   // Column count keeps the grid roughly as tall as the 4:5 sheet, so it never clips.
   const cols = Math.max(1, Math.ceil(Math.sqrt(visits.length * 0.8)));
   grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   document.getElementById('pc-count').textContent = new Set(visits.map(v => v.stadiumId)).size;
-  grid.innerHTML = visits.map(v => `
+  grid.innerHTML = visits.map(v => {
+    const s = stadiumById.get(v.stadiumId) || {};
+    return `
     <div class="pc-card">
-      <img class="pc-photo" src="${v.photo}" alt="${nameById.get(v.stadiumId) || ''}" />
+      <img class="pc-photo" src="${v.photo}" alt="${s.name || ''}" />
       <div class="pc-meta">
-        <div class="pc-name">${nameById.get(v.stadiumId) || ''}</div>
+        <div class="pc-name">${s.name || ''}</div>
+        <div class="pc-team">${s.team || ''}</div>
+        <div class="pc-city">${STADIUM_CITIES[v.stadiumId] || ''}</div>
         <div class="pc-date">${formatShortDate(v.date)}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 buildPhotoCard();
+
+applyLanguage();
+applyView(detectView());
 
 document.getElementById('scratchcard-btn').addEventListener('click', () => {
   document.getElementById('scratchcard').classList.remove('hidden');

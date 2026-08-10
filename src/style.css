@@ -1877,10 +1877,31 @@ body {
   line-height: 1.15;
 }
 
+.pc-team {
+  font-family: var(--font-display);
+  font-size: 0.42rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #5a6b7a;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.pc-city {
+  font-family: var(--font-display);
+  font-size: 0.4rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9a9084;
+  line-height: 1.2;
+}
+
 .pc-date {
   font-family: var(--font-display);
   font-size: 0.44rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #c0433a;
