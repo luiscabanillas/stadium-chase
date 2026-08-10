@@ -27,7 +27,7 @@ const translations = {
     legendText: 'Born and raised in Hermosillo, Sonora — a city where baseball runs deep. I set out to visit every MLB ballpark, always wearing my Naranjeros de Hermosillo jersey for the official photo.<br><br>At every new stadium, I arrive early to take the traditional picture, then tour the park and soak in its landmarks. I stay for the whole game, and never leave without my souvenir soda — collecting the cup is part of the ritual.',
   },
   es: {
-    appName: 'Stadium Chase',
+    appName: 'Recorrido de Estadios',
     tagline: 'Registro de Estadios de MLB',
     myVisits: 'Mis Visitas',
     all: 'Todos',
@@ -46,7 +46,7 @@ const translations = {
     allTime: 'Todos',
     startingLineup: 'Alineación Titular',
     substitutes: 'Suplentes',
-    pageTitle: 'Stadium Chase — Registro de Estadios de MLB',
+    pageTitle: 'Recorrido de Estadios — Registro de Estadios de MLB',
     scratchCard: 'Mi Tarjeta',
     scratchCardTitle: 'ESTADIOS DE GRANDES LIGAS',
     scratchCardSubtitle: 'TARJETA DE RASPAR',
