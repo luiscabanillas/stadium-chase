@@ -77,20 +77,32 @@ body {
 }
 
 .header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 2px;
+}
+
+/* Grid row height comes from the title/tagline stack; the square wrapper derives its
+   width from that height, and the img is absolute so it never drives the row size. */
+.logo-icon-wrap {
+  position: relative;
+  aspect-ratio: 1;
 }
 
 .logo-icon {
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 6px;
   object-fit: contain;
 }
