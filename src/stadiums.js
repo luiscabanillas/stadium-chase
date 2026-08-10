@@ -219,6 +219,18 @@ export const VISITS = [
     duration: 194,
     year: 2024,
   },
+  {
+    stadiumId: "tropicana-field",
+    date: "2026-08-01",
+    awayTeam: "Chicago White Sox", awayScore: 0,
+    homeTeam: "Tampa Bay Rays", homeScore: 1,
+    boxscoreUrl: "https://www.mlb.com/gameday/822944/final",
+    photo: "/photos/tropicana-field.jpeg",
+    wp: "Drew Rasmussen", lp: "Noah Schultz", sv: "Bryan Baker",
+    attendance: 23309, weather: "Dome", temp: 72, wind: null,
+    duration: 134,
+    year: 2026,
+  },
 ];
 
 export const EXTRA_GAMES = [
