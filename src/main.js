@@ -1,5 +1,6 @@
 import { ALL_MLB_STADIUMS, VISITS, TEAM_COLORS, TEAM_IDS, EXTRA_GAMES } from './stadiums.js';
 import { t, getLang, setLang, getDateLocale, detectLang, langPath } from './i18n.js';
+import { toPng } from 'html-to-image';
 
 const STADIUM_BLUEPRINTS = {
   'yankee-stadium': '/stadium-blueprints/100/yankee-stadium.png',
@@ -1400,6 +1401,11 @@ function applyLanguage() {
   document.getElementById('timeline-label').textContent = t('allTime');
   document.getElementById('lang-toggle').textContent = getLang().toUpperCase();
   document.getElementById('scratchcard-btn-label').textContent = t('scratchCard');
+  document.getElementById('photocard-btn-label').textContent = t('photoCard');
+  document.getElementById('pc-title').textContent = t('photoCardTitle');
+  document.getElementById('pc-subtitle').textContent = t('photoCardSubtitle');
+  document.getElementById('photocard-download-label').textContent = t('downloadImage');
+  buildPhotoCard();
   document.getElementById('legend-title').textContent = t('legendTitle');
   document.getElementById('legend-text').innerHTML = t('legendText');
   const scTitle = document.querySelector('.scratchcard-title');
@@ -1538,12 +1544,85 @@ function buildScratchCard() {
 
 buildScratchCard();
 
+// Photo card: visited ballparks only, ordered by visit date, sized for a social screenshot.
+function buildPhotoCard() {
+  const visits = [...VISITS].sort((a, b) => a.date.localeCompare(b.date));
+  const nameById = new Map(ALL_MLB_STADIUMS.map(s => [s.id, s.name]));
+  const grid = document.getElementById('pc-grid');
+  // Column count keeps the grid roughly as tall as the 4:5 sheet, so it never clips.
+  const cols = Math.max(1, Math.ceil(Math.sqrt(visits.length * 0.8)));
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  document.getElementById('pc-count').textContent = new Set(visits.map(v => v.stadiumId)).size;
+  grid.innerHTML = visits.map(v => `
+    <div class="pc-card">
+      <img class="pc-photo" src="${v.photo}" alt="${nameById.get(v.stadiumId) || ''}" />
+      <div class="pc-meta">
+        <div class="pc-name">${nameById.get(v.stadiumId) || ''}</div>
+        <div class="pc-date">${formatShortDate(v.date)}</div>
+      </div>
+    </div>`).join('');
+}
+
+buildPhotoCard();
+
 document.getElementById('scratchcard-btn').addEventListener('click', () => {
   document.getElementById('scratchcard').classList.remove('hidden');
 });
 
 document.getElementById('scratchcard-close').addEventListener('click', () => {
   document.getElementById('scratchcard').classList.add('hidden');
+});
+
+document.getElementById('photocard-btn').addEventListener('click', () => {
+  document.getElementById('photocard').classList.remove('hidden');
+});
+
+document.getElementById('photocard-close').addEventListener('click', () => {
+  document.getElementById('photocard').classList.add('hidden');
+});
+
+// An SVG rendered inside an <img> can't fetch external fonts, so the webfonts must be
+// inlined as base64 or the exported card falls back to a system face.
+let fontEmbedCSS = null;
+async function getFontEmbedCSS() {
+  if (fontEmbedCSS !== null) return fontEmbedCSS;
+  const href = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map(l => l.href)
+    .find(h => h.includes('fonts.googleapis.com'));
+  try {
+    const css = await (await fetch(href)).text();
+    const urls = [...new Set([...css.matchAll(/url\((https:\/\/[^)]+)\)/g)].map(m => m[1]))];
+    const inlined = await Promise.all(urls.map(async url => {
+      const buf = await (await fetch(url)).arrayBuffer();
+      const bin = Array.from(new Uint8Array(buf), b => String.fromCharCode(b)).join('');
+      return [url, `data:font/woff2;base64,${btoa(bin)}`];
+    }));
+    fontEmbedCSS = inlined.reduce((acc, [url, data]) => acc.replaceAll(url, data), css);
+  } catch {
+    fontEmbedCSS = '';
+  }
+  return fontEmbedCSS;
+}
+
+document.getElementById('photocard-download').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const label = document.getElementById('photocard-download-label');
+  btn.disabled = true;
+  label.textContent = t('preparingImage');
+  try {
+    const dataUrl = await toPng(document.getElementById('photocard-sheet'), {
+      pixelRatio: 2,
+      backgroundColor: '#f5f0e8',
+      fontEmbedCSS: await getFontEmbedCSS(),
+    });
+    const link = document.createElement('a');
+    link.download = `stadium-chase-${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = dataUrl;
+    link.click();
+  } finally {
+    btn.disabled = false;
+    label.textContent = t('downloadImage');
+  }
 });
 
 // Ritual legend slide-in (mobile)

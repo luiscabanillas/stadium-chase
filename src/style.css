@@ -1493,11 +1493,18 @@ body {
 }
 
 /* ── Scratch Card Button ── */
-.scratchcard-btn {
+.card-buttons {
   position: absolute;
   bottom: 100px;
   right: 16px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.scratchcard-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1766,14 +1773,216 @@ body {
   flex-shrink: 0;
 }
 
+/* ── Photo Card Modal ── */
+#photocard {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  animation: fadeIn 0.3s ease;
+}
+
+#photocard.hidden {
+  display: none;
+}
+
+.photocard-inner {
+  position: relative;
+  width: min(680px, 100%);
+  margin: auto;
+}
+
+/* The screenshot target: fixed 4:5 portrait, the standard social feed crop. */
+.photocard-sheet {
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  background: #f5f0e8;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.photocard-header {
+  text-align: center;
+  padding: 16px 20px 14px;
+  background: #1e3248;
+  flex-shrink: 0;
+}
+
+.photocard-title {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #f5f0e8;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.photocard-subtitle {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #c0433a;
+  margin-top: 4px;
+}
+
+.photocard-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 6px;
+  padding: 10px;
+}
+
+.pc-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ded5c6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pc-photo {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+  background: #ded5c6;
+}
+
+.pc-meta {
+  flex-shrink: 0;
+  padding: 4px 5px 5px;
+  text-align: center;
+}
+
+.pc-name {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #1a2a3a;
+  line-height: 1.15;
+}
+
+.pc-date {
+  font-family: var(--font-display);
+  font-size: 0.44rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #c0433a;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.photocard-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #1e3248;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #9aa7b4;
+}
+
+.photocard-progress b {
+  color: #f5f0e8;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.photocard-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: rgba(10, 14, 23, 0.88);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.photocard-download:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.photocard-download:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  #photocard {
+    padding: 8px;
+  }
+
+  .photocard-title {
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+  }
+
+  .photocard-subtitle {
+    font-size: 0.48rem;
+    letter-spacing: 1.5px;
+  }
+
+  .photocard-grid {
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .pc-name {
+    font-size: 0.42rem;
+  }
+
+  .pc-date {
+    font-size: 0.38rem;
+  }
+}
+
 /* Responsive scratch card */
 @media (max-width: 768px) {
-  .scratchcard-btn {
+  .card-buttons {
     position: relative;
     bottom: auto;
     right: auto;
     order: 3;
     margin: 12px 16px;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .scratchcard-btn {
+    flex: 1;
     justify-content: center;
   }
 
@@ -2353,14 +2562,21 @@ body {
     font-size: 0.68rem;
   }
 
-  /* Scratch card button: fixed at bottom */
-  .scratchcard-btn {
+  /* Scratch card buttons: fixed bar at bottom */
+  .card-buttons {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     order: unset;
     margin: 0;
+    gap: 0;
+    flex-direction: row;
+    z-index: 15;
+  }
+
+  .scratchcard-btn {
+    flex: 1;
     border-radius: 0;
     justify-content: center;
     padding: 12px 16px;
@@ -2368,7 +2584,10 @@ body {
     border-top: 1px solid var(--border);
     background: var(--bg-dark);
     backdrop-filter: none;
-    z-index: 15;
+  }
+
+  .scratchcard-btn + .scratchcard-btn {
+    border-left: 1px solid var(--border);
   }
 
   /* Stadium panel: full screen overlay */

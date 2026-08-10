@@ -1,1 +1,1 @@
-{"name":"stadium-chase","private":true,"version":"0.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},"dependencies":{"vite":"^8.0.16"}}
+{"name":"stadium-chase","private":true,"version":"0.0.0","type":"module","scripts":{"dev":"vite","build":"vite build","preview":"vite preview"},"dependencies":{"html-to-image":"^1.11.13","vite":"^8.0.16"}}
