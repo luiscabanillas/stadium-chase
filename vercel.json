@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/:lang(en|es)", "destination": "/index.html" }
+    { "source": "/:lang(en|es)", "destination": "/index.html" },
+    { "source": "/photos", "destination": "/index.html" },
+    { "source": "/:lang(en|es)/photos", "destination": "/index.html" }
   ]
 }

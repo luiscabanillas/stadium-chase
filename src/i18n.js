@@ -73,10 +73,6 @@ export function detectLang(pathname = window.location.pathname) {
   return browserLang.startsWith('es') ? 'es' : 'en';
 }
 
-export function langPath(lang) {
-  return lang === 'es' ? '/es' : '/';
-}
-
 let currentLang = detectLang();
 
 export function t(key) {

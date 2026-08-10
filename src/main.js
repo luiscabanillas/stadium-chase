@@ -1,5 +1,5 @@
 import { ALL_MLB_STADIUMS, VISITS, TEAM_COLORS, TEAM_IDS, EXTRA_GAMES } from './stadiums.js';
-import { t, getLang, setLang, getDateLocale, detectLang, langPath } from './i18n.js';
+import { t, getLang, setLang, getDateLocale, detectLang } from './i18n.js';
 import { toPng } from 'html-to-image';
 
 const STADIUM_BLUEPRINTS = {
@@ -1467,13 +1467,34 @@ function switchLang(lang) {
 
 document.getElementById('lang-toggle').addEventListener('click', () => {
   const next = getLang() === 'en' ? 'es' : 'en';
-  history.pushState({ lang: next }, '', langPath(next) + location.search + location.hash);
+  navigate(next, detectView());
   switchLang(next);
 });
 
-window.addEventListener('popstate', () => switchLang(detectLang()));
+// URL shape: [/es|/en] + [/photos]. Both segments are optional and independent.
+function detectView(pathname = location.pathname) {
+  return /^(\/(es|en))?\/photos\/?$/.test(pathname) ? 'photos' : null;
+}
+
+function buildPath(lang, view) {
+  return ((lang === 'es' ? '/es' : '') + (view === 'photos' ? '/photos' : '')) || '/';
+}
+
+function navigate(lang, view) {
+  history.pushState({ lang, view }, '', buildPath(lang, view) + location.search + location.hash);
+}
+
+function applyView(view) {
+  document.getElementById('photocard').classList.toggle('hidden', view !== 'photos');
+}
+
+window.addEventListener('popstate', () => {
+  switchLang(detectLang());
+  applyView(detectView());
+});
 
 applyLanguage();
+applyView(detectView());
 
 // ── Scratch Card ──
 const STADIUM_CITIES = {
@@ -1574,11 +1595,13 @@ document.getElementById('scratchcard-close').addEventListener('click', () => {
 });
 
 document.getElementById('photocard-btn').addEventListener('click', () => {
-  document.getElementById('photocard').classList.remove('hidden');
+  navigate(getLang(), 'photos');
+  applyView('photos');
 });
 
 document.getElementById('photocard-close').addEventListener('click', () => {
-  document.getElementById('photocard').classList.add('hidden');
+  navigate(getLang(), null);
+  applyView(null);
 });
 
 // An SVG rendered inside an <img> can't fetch external fonts, so the webfonts must be
