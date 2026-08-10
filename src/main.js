@@ -1,5 +1,5 @@
 import { ALL_MLB_STADIUMS, VISITS, TEAM_COLORS, TEAM_IDS, EXTRA_GAMES } from './stadiums.js';
-import { t, getLang, setLang, getDateLocale } from './i18n.js';
+import { t, getLang, setLang, getDateLocale, detectLang, langPath } from './i18n.js';
 
 const STADIUM_BLUEPRINTS = {
   'yankee-stadium': '/stadium-blueprints/100/yankee-stadium.png',
@@ -1392,6 +1392,7 @@ setTimeout(() => {
 
 // i18n: update all static text
 function applyLanguage() {
+  document.documentElement.lang = getLang();
   document.title = t('pageTitle');
   document.querySelector('.logo h1').textContent = t('appName');
   document.querySelector('.tagline').textContent = t('tagline');
@@ -1452,11 +1453,19 @@ function applyLanguage() {
   renderVisitList(activeYear === 'all' ? null : parseInt(activeYear));
 }
 
-document.getElementById('lang-toggle').addEventListener('click', () => {
-  setLang(getLang() === 'en' ? 'es' : 'en');
+function switchLang(lang) {
+  setLang(lang);
   applyLanguage();
   applyTimeline(parseInt(timelineSlider.value));
+}
+
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  const next = getLang() === 'en' ? 'es' : 'en';
+  history.pushState({ lang: next }, '', langPath(next) + location.search + location.hash);
+  switchLang(next);
 });
+
+window.addEventListener('popstate', () => switchLang(detectLang()));
 
 applyLanguage();
 

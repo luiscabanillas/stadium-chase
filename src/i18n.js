@@ -55,8 +55,19 @@ const translations = {
   },
 };
 
-const browserLang = navigator.language || navigator.userLanguage || 'en';
-let currentLang = browserLang.startsWith('es') ? 'es' : 'en';
+// URL path wins over browser language so /es and /en are shareable deeplinks.
+export function detectLang(pathname = window.location.pathname) {
+  const match = pathname.match(/^\/(es|en)(\/|$)/);
+  if (match) return match[1];
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  return browserLang.startsWith('es') ? 'es' : 'en';
+}
+
+export function langPath(lang) {
+  return lang === 'es' ? '/es' : '/';
+}
+
+let currentLang = detectLang();
 
 export function t(key) {
   return translations[currentLang]?.[key] || translations.en[key] || key;
@@ -68,6 +79,7 @@ export function getLang() {
 
 export function setLang(lang) {
   currentLang = lang;
+  document.documentElement.lang = lang;
 }
 
 export function getDateLocale() {
