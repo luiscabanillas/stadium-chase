@@ -1792,19 +1792,31 @@ body {
 }
 
 .photocard-inner {
+  --photocard-scale: 1;
+  --photocard-preview-width: 680px;
+  --photocard-preview-height: 850px;
   position: relative;
-  width: min(680px, 100%);
+  width: min(var(--photocard-preview-width), 100%);
   margin: auto;
 }
 
-/* The screenshot target: fixed 4:5 portrait, the standard social feed crop. */
+.photocard-preview {
+  width: 100%;
+  height: var(--photocard-preview-height);
+}
+
+/* Keep the export canvas fixed while scaling only its on-screen presentation. */
 .photocard-sheet {
+  width: 680px;
+  height: 850px;
   aspect-ratio: 4 / 5;
   display: flex;
   flex-direction: column;
   background: #f5f0e8;
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
   overflow: hidden;
+  transform: scale(var(--photocard-scale));
+  transform-origin: top left;
 }
 
 .photocard-header {

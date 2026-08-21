@@ -1489,9 +1489,47 @@ function navigate(lang, view) {
   history.pushState({ lang, view }, '', buildPath(lang, view) + location.search + location.hash);
 }
 
-function applyView(view) {
-  document.getElementById('photocard').classList.toggle('hidden', view !== 'photos');
+const PHOTO_CARD_WIDTH = 680;
+const PHOTO_CARD_HEIGHT = 850;
+const PHOTO_CARD_MAX_PREVIEW_WIDTH = 1100;
+
+function resizePhotoCardPreview() {
+  const modal = document.getElementById('photocard');
+  if (modal.classList.contains('hidden')) return;
+
+  const inner = modal.querySelector('.photocard-inner');
+  const download = document.getElementById('photocard-download');
+  const modalStyle = getComputedStyle(modal);
+  const downloadStyle = getComputedStyle(download);
+  const availableWidth = window.innerWidth
+    - parseFloat(modalStyle.paddingLeft)
+    - parseFloat(modalStyle.paddingRight);
+  const availableHeight = window.innerHeight
+    - parseFloat(modalStyle.paddingTop)
+    - parseFloat(modalStyle.paddingBottom)
+    - download.offsetHeight
+    - parseFloat(downloadStyle.marginTop);
+  const baselineWidth = Math.min(PHOTO_CARD_WIDTH, availableWidth);
+  const fittedWidth = Math.min(
+    PHOTO_CARD_MAX_PREVIEW_WIDTH,
+    availableWidth,
+    Math.max(0, availableHeight) * PHOTO_CARD_WIDTH / PHOTO_CARD_HEIGHT,
+  );
+  const previewWidth = Math.floor(Math.max(baselineWidth, fittedWidth));
+  const scale = previewWidth / PHOTO_CARD_WIDTH;
+
+  inner.style.setProperty('--photocard-scale', scale);
+  inner.style.setProperty('--photocard-preview-width', `${previewWidth}px`);
+  inner.style.setProperty('--photocard-preview-height', `${PHOTO_CARD_HEIGHT * scale}px`);
 }
+
+function applyView(view) {
+  const isPhotoCard = view === 'photos';
+  document.getElementById('photocard').classList.toggle('hidden', !isPhotoCard);
+  if (isPhotoCard) requestAnimationFrame(resizePhotoCardPreview);
+}
+
+window.addEventListener('resize', resizePhotoCardPreview);
 
 window.addEventListener('popstate', () => {
   switchLang(detectLang());
@@ -1644,9 +1682,16 @@ document.getElementById('photocard-download').addEventListener('click', async (e
   label.textContent = t('preparingImage');
   try {
     const dataUrl = await toPng(document.getElementById('photocard-sheet'), {
+      width: PHOTO_CARD_WIDTH,
+      height: PHOTO_CARD_HEIGHT,
       pixelRatio: 2,
       backgroundColor: '#f5f0e8',
       fontEmbedCSS: await getFontEmbedCSS(),
+      style: {
+        width: `${PHOTO_CARD_WIDTH}px`,
+        height: `${PHOTO_CARD_HEIGHT}px`,
+        transform: 'none',
+      },
     });
     const link = document.createElement('a');
     link.download = `stadium-chase-${new Date().toISOString().slice(0, 10)}.png`;
