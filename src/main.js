@@ -231,12 +231,17 @@ function distanceFromHermosillo(lat, lng) {
   return km;
 }
 
-function formatDistance(km) {
+function formatDistanceValue(km) {
   if (getLang() === 'es') {
-    return `${Math.round(km).toLocaleString('es-MX')} km de HMO`;
+    return `${Math.round(km).toLocaleString('es-MX')} km`;
   }
   const miles = km * 0.621371;
-  return `${Math.round(miles).toLocaleString('en-US')} mi away from HMO`;
+  return `${Math.round(miles).toLocaleString('en-US')} mi`;
+}
+
+function formatDistanceFromHermosillo(km) {
+  const distance = formatDistanceValue(km);
+  return getLang() === 'es' ? `${distance} de HMO` : `${distance} away from HMO`;
 }
 
 function formatDuration(mins) {
@@ -538,7 +543,7 @@ function showPanel(stadium) {
     // Details
     detailsSection.style.display = '';
     const km = distanceFromHermosillo(stadium.lat, stadium.lng);
-    document.querySelector('#detail-distance .detail-value').textContent = formatDistance(km);
+    document.querySelector('#detail-distance .detail-value').textContent = formatDistanceFromHermosillo(km);
     document.querySelector('#detail-attendance .detail-value').textContent = formatAttendance(visit.attendance);
     const weatherText = translateWeather(visit.weather);
     const tempVal = visit.temp
@@ -1027,7 +1032,7 @@ function showHomeLine(entry) {
   }).addTo(map);
 
   const fromWord = getLang() === 'es' ? 'Desde' : 'From';
-  hoverLine.bindTooltip(`${fromWord} ${home.city} · ${formatDistance(km)}`, {
+  hoverLine.bindTooltip(`${fromWord} ${home.city} · ${formatDistanceValue(km)}`, {
     permanent: true,
     direction: 'center',
     className: 'home-line-tip',
