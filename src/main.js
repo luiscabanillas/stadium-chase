@@ -160,11 +160,20 @@ window.__map = map;
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-  subdomains: 'abcd',
+const esriTileOptions = {
+  attribution: 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community',
   maxZoom: 20,
-}).addTo(map);
+};
+
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  esriTileOptions,
+).addTo(map);
+
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 20 },
+).addTo(map);
 
 function makeMarkerIcon(stadium, visited) {
   if (visited === undefined) visited = visitMap.has(stadium.id);
@@ -1410,6 +1419,7 @@ function applyLanguage() {
   document.getElementById('pc-title').textContent = t('photoCardTitle');
   document.getElementById('pc-subtitle').textContent = t('photoCardSubtitle');
   document.getElementById('photocard-download-label').textContent = t('downloadImage');
+  buildPhotoCardFormatOptions();
   buildPhotoCard();
   document.getElementById('legend-title').textContent = t('legendTitle');
   document.getElementById('legend-text').innerHTML = t('legendText');
@@ -1490,37 +1500,92 @@ function navigate(lang, view) {
 }
 
 const PHOTO_CARD_WIDTH = 680;
-const PHOTO_CARD_HEIGHT = 850;
 const PHOTO_CARD_MAX_PREVIEW_WIDTH = 1100;
+const PHOTO_CARD_FORMAT_GROUPS = {
+  portrait: 'formatGroupPortrait',
+  square: 'formatGroupSquare',
+  landscape: 'formatGroupLandscape',
+};
+const PHOTO_CARD_FORMATS = [
+  { id: 'original', group: 'portrait', labelKey: 'formatHighResPortrait', width: 1360, height: 1700 },
+  { id: 'social-portrait', group: 'portrait', platforms: 'Instagram / Facebook / LinkedIn', labelKey: 'formatPortraitPost', width: 1080, height: 1350 },
+  { id: 'instagram-tall', group: 'portrait', platforms: 'Instagram', labelKey: 'formatTallPost', width: 1080, height: 1440 },
+  { id: 'full-screen', group: 'portrait', platforms: 'Instagram / Facebook / TikTok / YouTube', labelKey: 'formatFullScreen', width: 1080, height: 1920 },
+  { id: 'pinterest-pin', group: 'portrait', platforms: 'Pinterest', labelKey: 'formatStandardPin', width: 1000, height: 1500 },
+  { id: 'social-square', group: 'square', platforms: 'Instagram / Facebook / X', labelKey: 'formatSquarePost', width: 1080, height: 1080 },
+  { id: 'linkedin-square', group: 'square', platforms: 'LinkedIn', labelKey: 'formatSquarePost', width: 1200, height: 1200 },
+  { id: 'instagram-landscape', group: 'landscape', platforms: 'Instagram', labelKey: 'formatLandscapePost', width: 1080, height: 566 },
+  { id: 'social-landscape', group: 'landscape', platforms: 'Facebook / LinkedIn', labelKey: 'formatLandscapePost', width: 1200, height: 628 },
+  { id: 'x-landscape', group: 'landscape', platforms: 'X', labelKey: 'formatLandscapePost', width: 1600, height: 900 },
+  { id: 'youtube-thumbnail', group: 'landscape', platforms: 'YouTube', labelKey: 'formatThumbnail', width: 1280, height: 720 },
+];
+
+function selectedPhotoCardFormat() {
+  const selectedId = document.getElementById('photocard-format').value;
+  return PHOTO_CARD_FORMATS.find(format => format.id === selectedId) || PHOTO_CARD_FORMATS[0];
+}
+
+function photoCardDesignHeight(format) {
+  return PHOTO_CARD_WIDTH * format.height / format.width;
+}
+
+function buildPhotoCardFormatOptions() {
+  const select = document.getElementById('photocard-format');
+  const selectedId = select.value || PHOTO_CARD_FORMATS[0].id;
+  select.innerHTML = '';
+  select.setAttribute('aria-label', t('exportFormat'));
+
+  Object.entries(PHOTO_CARD_FORMAT_GROUPS).forEach(([group, labelKey]) => {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = t(labelKey);
+    PHOTO_CARD_FORMATS.filter(format => format.group === group).forEach(format => {
+      const option = document.createElement('option');
+      option.value = format.id;
+      option.textContent = [
+        format.platforms,
+        t(format.labelKey),
+        `${format.width} × ${format.height}`,
+      ].filter(Boolean).join(' · ');
+      optgroup.appendChild(option);
+    });
+    select.appendChild(optgroup);
+  });
+
+  select.value = PHOTO_CARD_FORMATS.some(format => format.id === selectedId)
+    ? selectedId
+    : PHOTO_CARD_FORMATS[0].id;
+}
 
 function resizePhotoCardPreview() {
   const modal = document.getElementById('photocard');
   if (modal.classList.contains('hidden')) return;
 
   const inner = modal.querySelector('.photocard-inner');
-  const download = document.getElementById('photocard-download');
+  const actions = modal.querySelector('.photocard-actions');
+  const format = selectedPhotoCardFormat();
+  const designHeight = photoCardDesignHeight(format);
   const modalStyle = getComputedStyle(modal);
-  const downloadStyle = getComputedStyle(download);
+  const actionsStyle = getComputedStyle(actions);
   const availableWidth = window.innerWidth
     - parseFloat(modalStyle.paddingLeft)
     - parseFloat(modalStyle.paddingRight);
   const availableHeight = window.innerHeight
     - parseFloat(modalStyle.paddingTop)
     - parseFloat(modalStyle.paddingBottom)
-    - download.offsetHeight
-    - parseFloat(downloadStyle.marginTop);
-  const baselineWidth = Math.min(PHOTO_CARD_WIDTH, availableWidth);
+    - actions.offsetHeight
+    - parseFloat(actionsStyle.marginTop);
+  const minimumWidth = Math.min(320, availableWidth);
   const fittedWidth = Math.min(
     PHOTO_CARD_MAX_PREVIEW_WIDTH,
     availableWidth,
-    Math.max(0, availableHeight) * PHOTO_CARD_WIDTH / PHOTO_CARD_HEIGHT,
+    Math.max(0, availableHeight) * PHOTO_CARD_WIDTH / designHeight,
   );
-  const previewWidth = Math.floor(Math.max(baselineWidth, fittedWidth));
+  const previewWidth = Math.floor(Math.max(minimumWidth, fittedWidth));
   const scale = previewWidth / PHOTO_CARD_WIDTH;
 
   inner.style.setProperty('--photocard-scale', scale);
   inner.style.setProperty('--photocard-preview-width', `${previewWidth}px`);
-  inner.style.setProperty('--photocard-preview-height', `${PHOTO_CARD_HEIGHT * scale}px`);
+  inner.style.setProperty('--photocard-preview-height', `${designHeight * scale}px`);
 }
 
 function applyView(view) {
@@ -1605,19 +1670,29 @@ function buildScratchCard() {
 
 buildScratchCard();
 
-// Photo card: visited ballparks only, ordered by visit date, sized for a social screenshot.
+// Photo card: visited ballparks only, ordered by visit date and reflowed per format.
 function buildPhotoCard() {
   const visits = [...VISITS].sort((a, b) => a.date.localeCompare(b.date));
   const stadiumById = new Map(ALL_MLB_STADIUMS.map(s => [s.id, s]));
+  const inner = document.querySelector('.photocard-inner');
+  const sheet = document.getElementById('photocard-sheet');
   const grid = document.getElementById('pc-grid');
-  // Column count keeps the grid roughly as tall as the 4:5 sheet, so it never clips.
-  const cols = Math.max(1, Math.ceil(Math.sqrt(visits.length * 0.8)));
+  const format = selectedPhotoCardFormat();
+  const aspectRatio = format.width / format.height;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(visits.length * aspectRatio)));
+  const remainder = visits.length % cols;
+  const firstLastRowIndex = remainder ? visits.length - remainder : -1;
+  const lastRowStart = Math.floor((cols - remainder) / 2) + 1;
+
+  inner.style.setProperty('--photocard-design-height', `${photoCardDesignHeight(format)}px`);
+  sheet.dataset.layout = aspectRatio >= 1.4 ? 'landscape' : 'standard';
   grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   document.getElementById('pc-count').textContent = new Set(visits.map(v => v.stadiumId)).size;
-  grid.innerHTML = visits.map(v => {
+  grid.innerHTML = visits.map((v, index) => {
     const s = stadiumById.get(v.stadiumId) || {};
+    const position = index === firstLastRowIndex ? ` style="grid-column-start:${lastRowStart}"` : '';
     return `
-    <div class="pc-card">
+    <div class="pc-card"${position}>
       <img class="pc-photo" src="${v.photo}" alt="${s.name || ''}" />
       <div class="pc-meta">
         <div class="pc-name">${s.name || ''}</div>
@@ -1627,9 +1702,9 @@ function buildPhotoCard() {
       </div>
     </div>`;
   }).join('');
-}
 
-buildPhotoCard();
+  requestAnimationFrame(resizePhotoCardPreview);
+}
 
 applyLanguage();
 applyView(detectView());
@@ -1651,6 +1726,8 @@ document.getElementById('photocard-close').addEventListener('click', () => {
   navigate(getLang(), null);
   applyView(null);
 });
+
+document.getElementById('photocard-format').addEventListener('change', buildPhotoCard);
 
 // An SVG rendered inside an <img> can't fetch external fonts, so the webfonts must be
 // inlined as base64 or the exported card falls back to a system face.
@@ -1678,27 +1755,34 @@ async function getFontEmbedCSS() {
 document.getElementById('photocard-download').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   const label = document.getElementById('photocard-download-label');
+  const formatSelect = document.getElementById('photocard-format');
+  const format = selectedPhotoCardFormat();
+  const designHeight = photoCardDesignHeight(format);
   btn.disabled = true;
+  formatSelect.disabled = true;
   label.textContent = t('preparingImage');
   try {
     const dataUrl = await toPng(document.getElementById('photocard-sheet'), {
       width: PHOTO_CARD_WIDTH,
-      height: PHOTO_CARD_HEIGHT,
-      pixelRatio: 2,
+      height: designHeight,
+      canvasWidth: format.width,
+      canvasHeight: format.height,
+      pixelRatio: 1,
       backgroundColor: '#f5f0e8',
       fontEmbedCSS: await getFontEmbedCSS(),
       style: {
         width: `${PHOTO_CARD_WIDTH}px`,
-        height: `${PHOTO_CARD_HEIGHT}px`,
+        height: `${designHeight}px`,
         transform: 'none',
       },
     });
     const link = document.createElement('a');
-    link.download = `stadium-chase-${new Date().toISOString().slice(0, 10)}.png`;
+    link.download = `stadium-chase-${format.id}-${new Date().toISOString().slice(0, 10)}.png`;
     link.href = dataUrl;
     link.click();
   } finally {
     btn.disabled = false;
+    formatSelect.disabled = false;
     label.textContent = t('downloadImage');
   }
 });

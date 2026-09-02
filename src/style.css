@@ -1793,6 +1793,7 @@ body {
 
 .photocard-inner {
   --photocard-scale: 1;
+  --photocard-design-height: 850px;
   --photocard-preview-width: 680px;
   --photocard-preview-height: 850px;
   position: relative;
@@ -1805,11 +1806,10 @@ body {
   height: var(--photocard-preview-height);
 }
 
-/* Keep the export canvas fixed while scaling only its on-screen presentation. */
+/* Keep a fixed logical width while the selected export format controls height. */
 .photocard-sheet {
   width: 680px;
-  height: 850px;
-  aspect-ratio: 4 / 5;
+  height: var(--photocard-design-height);
   display: flex;
   flex-direction: column;
   background: #f5f0e8;
@@ -1942,13 +1942,88 @@ body {
   letter-spacing: 1px;
 }
 
+.photocard-sheet[data-layout="landscape"] .photocard-header {
+  padding: 10px 20px 8px;
+}
+
+.photocard-sheet[data-layout="landscape"] .photocard-title {
+  font-size: 1.25rem;
+}
+
+.photocard-sheet[data-layout="landscape"] .photocard-subtitle {
+  font-size: 0.5rem;
+  margin-top: 2px;
+}
+
+.photocard-sheet[data-layout="landscape"] .photocard-grid {
+  gap: 4px;
+  padding: 6px;
+}
+
+.photocard-sheet[data-layout="landscape"] .pc-meta {
+  padding: 2px 3px 3px;
+}
+
+.photocard-sheet[data-layout="landscape"] .pc-name {
+  font-size: 0.44rem;
+}
+
+.photocard-sheet[data-layout="landscape"] .pc-team,
+.photocard-sheet[data-layout="landscape"] .pc-city {
+  font-size: 0.36rem;
+}
+
+.photocard-sheet[data-layout="landscape"] .pc-date {
+  font-size: 0.38rem;
+  margin-top: 1px;
+}
+
+.photocard-sheet[data-layout="landscape"] .photocard-footer {
+  padding: 5px 12px;
+  font-size: 0.5rem;
+}
+
+.photocard-sheet[data-layout="landscape"] .photocard-progress b {
+  font-size: 0.72rem;
+}
+
+.photocard-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.photocard-format {
+  min-width: 0;
+  height: 39px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(10, 14, 23, 0.88);
+  color: var(--text-secondary);
+  color-scheme: dark;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.photocard-format:hover,
+.photocard-format:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
 .photocard-download {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  margin-top: 12px;
+  width: auto;
+  min-width: 190px;
+  margin-top: 0;
   padding: 10px 16px;
   border-radius: 24px;
   border: 1px solid var(--border);
@@ -1978,27 +2053,12 @@ body {
     padding: 8px;
   }
 
-  .photocard-title {
-    font-size: 1.1rem;
-    letter-spacing: 2px;
+  .photocard-actions {
+    grid-template-columns: 1fr;
   }
 
-  .photocard-subtitle {
-    font-size: 0.48rem;
-    letter-spacing: 1.5px;
-  }
-
-  .photocard-grid {
-    gap: 4px;
-    padding: 6px;
-  }
-
-  .pc-name {
-    font-size: 0.42rem;
-  }
-
-  .pc-date {
-    font-size: 0.38rem;
+  .photocard-download {
+    width: 100%;
   }
 }
 
